@@ -20,91 +20,66 @@ or using npm
 npm install --save react-native-material-menu
 ```
 
-## Usage example ([expo demo](https://snack.expo.io/@mxck/react-native-material-menu-demo))
+## Usage example
 
 ```jsx
 import React from 'react';
+import React, { useState } from 'react';
 
 import { View, Text } from 'react-native';
-import Menu, { MenuItem, MenuDivider } from 'react-native-material-menu';
+import { Menu, MenuItem, MenuDivider } from 'react-native-material-menu';
 
-class App extends React.PureComponent {
-  _menu = null;
+export default function App() {
+  const [visible, setVisible] = useState(false);
 
-  setMenuRef = ref => {
-    this._menu = ref;
-  };
+  const hideMenu = () => setVisible(false);
 
-  hideMenu = () => {
-    this._menu.hide();
-  };
+  const showMenu = () => setVisible(true);
 
-  showMenu = () => {
-    this._menu.show();
-  };
-
-  render() {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Menu
-          ref={this.setMenuRef}
-          button={<Text onPress={this.showMenu}>Show menu</Text>}
-        >
-          <MenuItem onPress={this.hideMenu}>Menu item 1</MenuItem>
-          <MenuItem onPress={this.hideMenu}>Menu item 2</MenuItem>
-          <MenuItem onPress={this.hideMenu} disabled>
-            Menu item 3
-          </MenuItem>
-          <MenuDivider />
-          <MenuItem onPress={this.hideMenu}>Menu item 4</MenuItem>
-        </Menu>
-      </View>
-    );
-  }
+  return (
+    <View style={{ height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+      <Menu
+        visible={visible}
+        anchor={<Text onPress={showMenu}>Show menu</Text>}
+        onRequestClose={hideMenu}
+      >
+        <MenuItem onPress={hideMenu}>Menu item 1</MenuItem>
+        <MenuItem onPress={hideMenu}>Menu item 2</MenuItem>
+        <MenuItem disabled>Disabled item</MenuItem>
+        <MenuDivider />
+        <MenuItem onPress={hideMenu}>Menu item 4</MenuItem>
+      </Menu>
+    </View>
+  );
 }
-
-export default App;
 ```
 
 ## Menu
 
-### Properties
-
-| name              | description                            |     type | default |
-| :---------------- | :------------------------------------- | -------: | :------ |
-| children          | Components rendered in menu (required) |     Node | -       |
-| button            | Button component (required)            |     Node | -       |
-| style             | Menu style                             |    Style | -       |
-| onHidden          | Callback when menu has become hidden   | Function | -       |
-| animationDuration | Changes show() and hide() duration     |   Number | 300     |
-
-### Methods
-
-| name   | description |
-| :----- | :---------- |
-| show() | Shows menu  |
-| hide() | Hides menu  |
+| name              | description                            |      type | default |
+| :---------------- | :------------------------------------- | --------: | :------ |
+| children          | Components rendered in menu (required) | ReactNode | -       |
+| anchor            | Button component (required)            | ReactNode | -       |
+| visible           | Whether the Menu is currently visible  |   Boolean | -       |
+| style             | Menu style                             | ViewStyle | -       |
+| onRequestClose    | Callback when menu has become hidden   |  Function | -       |
+| animationDuration | Changes show/hide animation duration   |    Number | 300     |
 
 ## MenuItem
 
-### Properties
-
-| name              | description                  |   type | default                          |
-| :---------------- | :--------------------------- | -----: | :------------------------------- |
-| children          | Rendered children (required) |   Node | -                                |
-| disabled          | Disabled flag                |   Bool | `false`                          |
-| disabledTextColor | Disabled text color          | String | `'#bdbdbd'`                      |
-| ellipsizeMode     | Custom ellipsizeMode         | String | iOS: `'clip'`, Android: `'tail'` |
-| onPress           | Called function on press     |   Func | -                                |
-| style             | Container style              |  Style | -                                |
-| textStyle         | Text style                   |  Style | -                                |
-| underlayColor     | Pressed color                | String | `'#e0e0e0'`                      |
+| name              | description                  |      type | default     |
+| :---------------- | :--------------------------- | --------: | :---------- |
+| children          | Rendered children (required) | ReactNode | -           |
+| disabled          | Disabled flag                |   Boolean | `false`     |
+| disabledTextColor | Disabled text color          |    String | `'#bdbdbd'` |
+| onPress           | Called function on press     |  Function | -           |
+| style             | Container style              | ViewStyle | -           |
+| textStyle         | Text style                   | TextStyle | -           |
+| pressColor        | Pressed color                |    String | `'#e0e0e0'` |
 
 > **Children** must be based on [`<Text>`][text component] component (like **text** itself, strings, [react-native-vector-icons] or [expo icons]) otherwise you may get an error on a real device.
 
 ## MenuDivider
-
-### Properties
 
 | name  | description |   type | default              |
 | :---- | :---------- | -----: | :------------------- |
@@ -116,7 +91,7 @@ Also take a look at other our components for react-native - [pietile-native-kit]
 
 ## License
 
-MIT License. © Maksim Milyutin 2017-2019
+MIT License. © Maksim Milyutin 2017-2021
 
 [text component]: https://facebook.github.io/react-native/docs/text.html
 [react-native-vector-icons]: https://github.com/oblador/react-native-vector-icons

@@ -5,6 +5,7 @@ import {
   Dimensions,
   Easing,
   I18nManager,
+  LayoutChangeEvent,
   Modal,
   Platform,
   StatusBar,
@@ -12,25 +13,52 @@ import {
   TouchableWithoutFeedback,
   View,
   ScrollView,
+  ViewStyle,
 } from 'react-native';
 
-const STATES = {
-  HIDDEN: 'HIDDEN',
-  ANIMATING: 'ANIMATING',
-  SHOWN: 'SHOWN',
-};
+export interface MenuProps {
+  children?: React.ReactNode;
+  anchor?: React.ReactNode;
+  style?: ViewStyle;
+  onRequestClose?(): void;
+  animationDuration?: number;
+  testID?: string;
+  visible?: boolean;
+}
+
+enum States {
+  Hidden,
+  Animating,
+  Shown,
+}
+
+interface State {
+  buttonHeight: number;
+  buttonWidth: number;
+  left: number;
+  menuHeight: number;
+  menuSizeAnimation: Animated.ValueXY;
+  menuState: States;
+  menuWidth: number;
+  opacityAnimation: Animated.Value;
+  top: number;
+}
 
 const EASING = Easing.bezier(0.4, 0, 0.2, 1);
 const SCREEN_INDENT = 8;
 
-class Menu extends React.Component {
-  _container = null;
+export class Menu extends React.Component<MenuProps, State> {
+  _container: View | null = null;
 
-  constructor(props) {
+  static defaultProps = {
+    animationDuration: 300,
+  };
+
+  constructor(props: MenuProps) {
     super(props);
 
     this.state = {
-      menuState: STATES.HIDDEN,
+      menuState: States.Hidden,
 
       top: 0,
       left: 0,
@@ -46,13 +74,33 @@ class Menu extends React.Component {
     };
   }
 
-  _setContainerRef = (ref) => {
+  componentDidMount() {
+    if (!this.props.visible) {
+      return;
+    }
+
+    this.show();
+  }
+
+  componentDidUpdate(prevProps: MenuProps) {
+    if (prevProps.visible === this.props.visible) {
+      return;
+    }
+
+    if (this.props.visible) {
+      this.show();
+    } else {
+      this.hide();
+    }
+  }
+
+  private setContainerRef = (ref: View) => {
     this._container = ref;
   };
 
   // Start menu animation
-  _onMenuLayout = (e) => {
-    if (this.state.menuState === STATES.ANIMATING) {
+  private onMenuLayout = (e: LayoutChangeEvent) => {
+    if (this.state.menuState === States.Animating) {
       return;
     }
 
@@ -60,7 +108,7 @@ class Menu extends React.Component {
 
     this.setState(
       {
-        menuState: STATES.ANIMATING,
+        menuState: States.Animating,
         menuWidth: width,
         menuHeight: height,
       },
@@ -83,19 +131,19 @@ class Menu extends React.Component {
     );
   };
 
-  show = () => {
-    this._container.measureInWindow((left, top, buttonWidth, buttonHeight) => {
+  private show = () => {
+    this._container?.measureInWindow((left, top, buttonWidth, buttonHeight) => {
       this.setState({
         buttonHeight,
         buttonWidth,
         left,
-        menuState: STATES.SHOWN,
+        menuState: States.Shown,
         top,
       });
     });
   };
 
-  hide = (onHidden) => {
+  private hide = () => {
     Animated.timing(this.state.opacityAnimation, {
       toValue: 0,
       duration: this.props.animationDuration,
@@ -103,29 +151,16 @@ class Menu extends React.Component {
       useNativeDriver: false,
     }).start(() => {
       // Reset state
-      this.setState(
-        {
-          menuState: STATES.HIDDEN,
-          menuSizeAnimation: new Animated.ValueXY({ x: 0, y: 0 }),
-          opacityAnimation: new Animated.Value(0),
-        },
-        () => {
-          if (onHidden) {
-            onHidden();
-          }
-
-          // Invoke onHidden callback if defined
-          if (this.props.onHidden) {
-            this.props.onHidden();
-          }
-        },
-      );
+      this.setState({
+        menuState: States.Hidden,
+        menuSizeAnimation: new Animated.ValueXY({ x: 0, y: 0 }),
+        opacityAnimation: new Animated.Value(0),
+      });
     });
   };
 
-  // @@ TODO: Rework this
-  _hide = () => {
-    this.hide();
+  private onRequestClose = () => {
+    this.props.onRequestClose?.();
   };
 
   render() {
@@ -187,18 +222,18 @@ class Menu extends React.Component {
     };
 
     const { menuState } = this.state;
-    const animationStarted = menuState === STATES.ANIMATING;
-    const modalVisible = menuState === STATES.SHOWN || animationStarted;
+    const animationStarted = menuState === States.Animating;
+    const modalVisible = menuState === States.Shown || animationStarted;
 
-    const { testID, button, style, children } = this.props;
+    const { testID, anchor, style, children } = this.props;
 
     return (
-      <View ref={this._setContainerRef} collapsable={false} testID={testID}>
-        <View>{button}</View>
+      <View ref={this.setContainerRef} collapsable={false} testID={testID}>
+        {anchor}
 
         <Modal
           visible={modalVisible}
-          onRequestClose={this._hide}
+          onRequestClose={this.onRequestClose}
           supportedOrientations={[
             'portrait',
             'portrait-upside-down',
@@ -208,15 +243,11 @@ class Menu extends React.Component {
           ]}
           transparent
         >
-          <TouchableWithoutFeedback onPress={this._hide} accessible={false}>
+          <TouchableWithoutFeedback onPress={this.onRequestClose} accessible={false}>
             <View style={StyleSheet.absoluteFill}>
               <Animated.View
-                onLayout={this._onMenuLayout}
-                style={[
-                  styles.shadowMenuContainer,
-                  shadowMenuContainerStyle,
-                  style,
-                ]}
+                onLayout={this.onMenuLayout}
+                style={[styles.shadowMenuContainer, shadowMenuContainerStyle, style]}
               >
                 <Animated.View
                   style={[styles.menuContainer, animationStarted && menuSize]}
@@ -233,10 +264,6 @@ class Menu extends React.Component {
     );
   }
 }
-
-Menu.defaultProps = {
-  animationDuration: 300,
-};
 
 const styles = StyleSheet.create({
   shadowMenuContainer: {
@@ -262,5 +289,3 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
-
-export default Menu;
